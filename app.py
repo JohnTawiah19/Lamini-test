@@ -28,8 +28,8 @@ def summarise_pipeline(filepath):
         'summarization',
         model = base_model,
         tokenizer = tokenizer,
-        max_length = 4000,
-        min_length = 1000
+        # max_length = 4000,
+        # min_length = 1000
     )
     
     input_text = file_preprocessing(filepath)
@@ -44,8 +44,8 @@ def generation_pipeline(filepath, prompt):
         model = base_model, 
         tokenizer = tokenizer,
         do_sample=True,
-        max_length = 4000,
-        min_length = 1000
+        # max_length = 4000,
+        # min_length = 1000
     )
     
     input_text = file_preprocessing(filepath)
@@ -76,6 +76,9 @@ def main():
     
     uploaded_file = st.file_uploader("Upload your PDF file", type= ['pdf']) 
     
+    # with st.sidebar:
+    #     chec
+    
     if uploaded_file is not None:
         btn_col1,  btn_col3 = st.columns([1,9])
         
@@ -93,7 +96,7 @@ def main():
                 temp_file.write(uploaded_file.read())
                 
             with col1:
-                st.info('Upload PDF file')
+                st.info('Uploaded PDF file')
                 displayPDF(filepath)
                 
             with col2:
@@ -108,7 +111,7 @@ def main():
                     temp_file.write(uploaded_file.read())
                     
                 with col1:
-                    st.info('Upload PDF file')
+                    st.info('Uploaded PDF file')
                     displayPDF(filepath)
                     
                 with col2:
