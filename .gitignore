@@ -1,3 +1,7 @@
 .venv
 
-/data
+./data
+/LaMini-Flan-T5-248M
+/LaMini-T5-738M
+/LaMini-GPT-1.5B
+/LaMini-Neo-1.3B
