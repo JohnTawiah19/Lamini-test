@@ -54,9 +54,9 @@ def generation_pipeline(checkpoint, filepath, prompt):
     base_model = T5ForConditionalGeneration.from_pretrained(checkpoint, device_map = 'auto', torch_dtype=torch.float32 )
     pipe_gen = pipeline(
         'text2text-generation',
-        model = base_model, 
-        tokenizer = tokenizer,
-        do_sample=True,
+        model = 'google/flan-t5-base', 
+        # tokenizer = tokenizer,
+        # do_sample=True,
         # max_length = 4000,
         # min_length = 1000
     )
@@ -105,7 +105,7 @@ def main():
             input_text = st.text_input('Make request', '')
 
         if input_text:
-            _extracted_from_main_23(uploaded_file, option, input_text)
+            llm_view(uploaded_file, option, input_text)
         if summarize_btn:
             col1,col2 = st.columns(2)
             filepath = f"data/{uploaded_file.name}"
@@ -122,8 +122,7 @@ def main():
                 st.success(summary)
 
 
-# TODO Rename this here and in `main`
-def _extracted_from_main_23(uploaded_file, option, input_text):
+def llm_view(uploaded_file, option, input_text):
     col1,col2 = st.columns(2)
     filepath = f"data/{uploaded_file.name}"
     print(filepath)
@@ -139,7 +138,5 @@ def _extracted_from_main_23(uploaded_file, option, input_text):
         summary = generation_pipeline(option, filepath, input_text)
         st.success(summary)
                     
-                
-    
 if __name__ == '__main__':
     main()
