@@ -1,18 +1,14 @@
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
-# from langchain_community.embeddings import HuggingFaceEmbeddings
-# from langchain_community.vectorstores import FAISS
-
-
-# from langchain.chains.summarize import load_summarize_chain
 from transformers import T5Tokenizer, T5ForConditionalGeneration, GPT2Tokenizer 
 from transformers import pipeline
 import torch
 import base64
-
+from store import Store
 # Model and Tokenizer
-checkpoint = 'LaMini-Flan-T5-248M'
+checkpoint = 'all-MiniLM-L6-v2'
+sentences = ''
 
 tokenizers = {
     'LaMini-Flan-T5-248M': T5Tokenizer,
@@ -22,31 +18,41 @@ tokenizers = {
 }
 
 
+store = Store(checkpoint)
+store.create()
+
+
+
 # Load and preprocess file
 def file_preprocessing(file):
     loader = PyPDFLoader(file)
+    # The `pages` variable is being used to store the result of loading and splitting the content of
+    # the PDF file. It is obtained by loading the PDF file using the PyPDFLoader and then splitting
+    # the content into individual pages using the text splitter. The `pages` variable will contain the
+    # text content of each page of the PDF document after the splitting process.
     pages = loader.load_and_split()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = text_splitter.split_documents(pages)
-    final_texts = ""
-    for text in texts:
-        final_texts = final_texts + text.page_content
-    return final_texts
-
-def summarise_pipeline(checkpoint, filepath):
-    tokenizer = tokenizers[checkpoint].from_pretrained(checkpoint)
-    base_model = T5ForConditionalGeneration.from_pretrained(checkpoint, device_map = 'auto', torch_dtype=torch.float32 )
-    pipe_sum = pipeline(
-        'summarization',
-        model = base_model,
-        tokenizer = tokenizer,
-
-    )
+    return [text.page_content for text in texts]
     
-    input_text = file_preprocessing(filepath)
-    result = pipe_sum(input_text)
-    result = result[0]['summary_text']
-    return result
+def summarise_pipeline(checkpoint, filepath):
+    # sourcery skip: inline-immediately-returned-variable
+    # tokenizer = tokenizers[checkpoint].from_pretrained(checkpoint)
+    # base_model = T5ForConditionalGeneration.from_pretrained(checkpoint, device_map = 'auto', torch_dtype=torch.float32 )
+    # pipe_sum = pipeline(  # noqa: F841
+    #     'summarization',
+    #     model = base_model,
+    #     tokenizer = tokenizer,
+
+    # )
+    
+    sentences = file_preprocessing(filepath)
+    query = 'Summarize the text'
+    output = store.load(sentences, query, filepath)
+    # result = pipe_sum(sentences)
+    # result = result[0]['summary_text']
+    return output[0]['vector']
+
 
 
 def generation_pipeline(checkpoint, filepath, prompt):
