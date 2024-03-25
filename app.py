@@ -18,8 +18,8 @@ tokenizers = {
 }
 
 
-db_store = Store(checkpoint)
-db_store.create()
+store = Store(checkpoint)
+store.create()
 
 
 
@@ -37,21 +37,22 @@ def file_preprocessing(file):
     
 def summarise_pipeline(checkpoint, filepath):
     # sourcery skip: inline-immediately-returned-variable
-    tokenizer = tokenizers[checkpoint].from_pretrained(checkpoint)
-    base_model = T5ForConditionalGeneration.from_pretrained(checkpoint, device_map = 'auto', torch_dtype=torch.float32 )
-    pipe_sum = pipeline(  # noqa: F841
-        'summarization',
-        model = base_model,
-        tokenizer = tokenizer,
+    # tokenizer = tokenizers[checkpoint].from_pretrained(checkpoint)
+    # base_model = T5ForConditionalGeneration.from_pretrained(checkpoint, device_map = 'auto', torch_dtype=torch.float32 )
+    # pipe_sum = pipeline(  # noqa: F841
+    #     'summarization',
+    #     model = base_model,
+    #     tokenizer = tokenizer,
 
-    )
+    # )
     
     sentences = file_preprocessing(filepath)
     query = 'Summarize the text'
-    output = db_store.add(sentences, query)
+    output = store.load(sentences, query, filepath)
     # result = pipe_sum(sentences)
     # result = result[0]['summary_text']
-    return output
+    return output[0]['vector']
+
 
 
 def generation_pipeline(checkpoint, filepath, prompt):
