@@ -11,9 +11,18 @@ from transformers import pipeline
 from langchain_core.prompts import PromptTemplate
 
 
+config={
+    'temperature': 0.7,
+    'max_new_tokens': 300,
+    'min_length': 150,
+    'max_length': 300,
+    'device': 'cpu'
+}
+
 # Load and preprocess file
 def file_preprocessing(file):
-    loader = PyPDFLoader("data/0130091154.pdf")
+    filepath =  'data/07-DecisionMaking-Eng.pdf'
+    loader = PyPDFLoader(filepath)
     pages = loader.load_and_split()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(pages)
@@ -33,25 +42,20 @@ def transformer():
     chain = pipeline(
         'summarization',
         model = "google/flan-t5-base", 
-        max_new_tokens=50
+        min_length = 150,
+        max_new_tokens=300
     )
 
     # Create an instance of the HuggingFacePipeline, which wraps the question-answering pipeline
     # with additional model-specific arguments (temperature and max_length)
     llm = HuggingFacePipeline(
     pipeline=chain,
-    model_kwargs={"temperature": 0.9, "max_length": 512},)
+    model_kwargs={"temperature": 0.7, "max_length": 512},)
     return llm
 
-
-
-
-
-
-def main():
-
-    # Define the path to the pre-trained model you want to use
-    modelPath = "sentence-transformers/all-MiniLM-l6-v2"
+def get_embeddings():
+        # Define the path to the pre-trained model you want to use
+    modelPath = "sentence-transformers/all-mpnet-base-v2"
 
     # Create a dictionary with model configuration options, specifying to use the CPU for computations
     model_kwargs = {'device':'cpu'}
@@ -66,11 +70,15 @@ def main():
         encode_kwargs=encode_kwargs # Pass the encoding options
     )
 
+    return embeddings
+
+def main():
     # # Initialise our vector database 
     db = lancedb.connect("/tmp/lancedb")
 
     docs =   file_preprocessing('')
-    question = "In 100 words what is software development"
+    embeddings = get_embeddings()
+    question = "Explain Bayesian regret"
 
     table = db.create_table("my_table", data=[{
         "vector": embeddings.embed_query("".join(text.page_content for text in docs)),
@@ -81,7 +89,6 @@ def main():
     db = LanceDB.from_documents(docs, embeddings)
     retriever = db.as_retriever(search_kwargs={"k": 5})
     docs = retriever.get_relevant_documents(question)
-    print(''.join(text.page_content for text in docs))
     
     llm = transformer()
 
@@ -92,10 +99,6 @@ def main():
     result = qa.invoke({"query": question})
     print(result["result"])
     # return result["result"]
-
-    # query = "What is Testing"
-    # results = retriever.get_relevant_documents(query)
-    # print("".join(result.page_content for result in results))
 
 
 if __name__ == '__main__':
