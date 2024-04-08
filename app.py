@@ -7,7 +7,7 @@ import torch
 import base64
 from store import Store
 # Model and Tokenizer
-checkpoint = 'all-MiniLM-L6-v2'
+checkpoint = 'google/flan-t5-base'
 sentences = ''
 
 tokenizers = {
