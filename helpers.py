@@ -28,7 +28,7 @@ def get_embeddings():
     return embeddings
 
 
-def transformer(checkpoint):
+def transformer(checkpoint, temperature):
 
     # checkpoint = "google/flan-t5-base", 
 
@@ -48,12 +48,11 @@ def transformer(checkpoint):
     # with additional model-specific arguments (temperature and max_length)
     llm = HuggingFacePipeline(
     pipeline=chain,
-    model_kwargs={"temperature": 0.7, "max_length": 512},)
+    model_kwargs={"temperature": temperature, "max_length": 512},)
     return llm
 
 # Load and preprocess file
-def file_preprocessing(file):
-    filepath =  'data/07-DecisionMaking-Eng.pdf'
+def file_preprocessing(filepath):
     loader = PyPDFLoader(filepath)
     pages = loader.load_and_split()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)

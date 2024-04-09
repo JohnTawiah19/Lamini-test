@@ -9,18 +9,18 @@ from helpers import get_embeddings, transformer, file_preprocessing
 from ui import displayPDF
 
 config={
-    'temperature': 0.7,
+    'temperature': 0.6,
     'max_new_tokens': 300,
     'min_length': 150,
     'max_length': 300,
     'device': 'cpu'
 }
 
-def run(model, question):
+def run(model, question, filepath):
      # Initialise our vector database 
     db = lancedb.connect("/tmp/lancedb")
 
-    docs =   file_preprocessing('')
+    docs =   file_preprocessing(filepath)
     embeddings = get_embeddings()
     # question = "Explain Bayesian regret"
 
@@ -34,11 +34,11 @@ def run(model, question):
     retriever = db.as_retriever(search_kwargs={"k": 5})
     docs = retriever.get_relevant_documents(question)
     
-    llm = transformer(model)
+    llm = transformer(model, options['temperature'])
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="refine", retriever=retriever, return_source_documents=False)
 
     result = qa.invoke({"query": question})
-    print(result["result"])
+    # print(result["result"])
     return result["result"]
 
 
@@ -53,8 +53,9 @@ def output(uploaded_file, option, input_text):
         
         st.info('Uploaded PDF file')
         displayPDF(filepath)
-    with col2:   
-        output = run(option,input_text )
+    with col2: 
+        st.info("Response")  
+        output = run(option,input_text, filepath )
         st.success(output)
 
 # Streamlit 
@@ -68,7 +69,12 @@ def main():
     with st.sidebar:
         option = st.selectbox(
             'Pick a model from the options',
-            ('google/flan-t5-base'))
+            ('google/flan-t5-base', ''))
+
+        config['temperature'] = st.slider('Select Temperature', 0.0, 1.0, (config['temperature']))
+        config['min_length']= st.number_input('Select min token length',value=config['min_length'], placeholder="Type a number...")
+        config['max_length']= st.number_input('Select max token length',value=config['max_length'], placeholder="Type a number...")
+        config['max_new_tokens']= st.number_input('Select max new token length',value= config['max_new_tokens'], placeholder="Type a number...")
         
     if uploaded_file is not None:
         btn_col1,  btn_col3 = st.columns([8,2])
