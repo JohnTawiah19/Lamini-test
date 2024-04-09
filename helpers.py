@@ -28,7 +28,7 @@ def get_embeddings():
     return embeddings
 
 
-def transformer(checkpoint, temperature):
+def transformer(checkpoint, config):
 
     # checkpoint = "google/flan-t5-base", 
 
@@ -40,15 +40,16 @@ def transformer(checkpoint, temperature):
     chain = pipeline(
         'summarization',
         model = checkpoint, 
-        min_length = 150,
-        max_new_tokens=300
+        min_length = config['min_length'], 
+        # max_length = config['max_length'],
+        max_new_tokens=config['max_new_tokens']
     )
 
     # Create an instance of the HuggingFacePipeline, which wraps the question-answering pipeline
     # with additional model-specific arguments (temperature and max_length)
     llm = HuggingFacePipeline(
     pipeline=chain,
-    model_kwargs={"temperature": temperature, "max_length": 512},)
+    model_kwargs={"temperature": config['temperature'], "max_length": 512},)
     return llm
 
 # Load and preprocess file
