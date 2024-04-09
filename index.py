@@ -1,15 +1,12 @@
 from langchain_community.document_loaders import HuggingFaceDatasetLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import LanceDB
-from transformers import AutoTokenizer, T5Tokenizer, T5ForConditionalGeneration
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.chains import RetrievalQA
-from langchain_community.document_loaders import PyPDFLoader
 import lancedb
-from transformers import pipeline
-from langchain_core.prompts import PromptTemplate
+import streamlit as st
+import base64
 
+from helpers import get_embeddings, transformer, file_preprocessing
+from ui import displayPDF
 
 config={
     'temperature': 0.7,
@@ -19,68 +16,15 @@ config={
     'device': 'cpu'
 }
 
-# Load and preprocess file
-def file_preprocessing(file):
-    filepath =  'data/07-DecisionMaking-Eng.pdf'
-    loader = PyPDFLoader(filepath)
-    pages = loader.load_and_split()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    texts = text_splitter.split_documents(pages)
-    # return "".join(text.page_content for text in texts)
-    return texts
-
-
-def transformer():
-
-    checkpoint = "google/flan-t5-base", 
-
-    # # Load the tokenizer associated with the specified model
-    # model =  T5ForConditionalGeneration.from_pretrained(checkpoint)
-    # tokenizer = T5Tokenizer.from_pretrained(checkpoint, padding=True, truncation=True, max_length=512)
-
-    # Define a question-answering pipeline using the model and tokenizer
-    chain = pipeline(
-        'summarization',
-        model = "google/flan-t5-base", 
-        min_length = 150,
-        max_new_tokens=300
-    )
-
-    # Create an instance of the HuggingFacePipeline, which wraps the question-answering pipeline
-    # with additional model-specific arguments (temperature and max_length)
-    llm = HuggingFacePipeline(
-    pipeline=chain,
-    model_kwargs={"temperature": 0.7, "max_length": 512},)
-    return llm
-
-def get_embeddings():
-        # Define the path to the pre-trained model you want to use
-    modelPath = "sentence-transformers/all-mpnet-base-v2"
-
-    # Create a dictionary with model configuration options, specifying to use the CPU for computations
-    model_kwargs = {'device':'cpu'}
-
-    # Create a dictionary with encoding options, specifically setting 'normalize_embeddings' to False
-    encode_kwargs = {'normalize_embeddings': False}
-
-    # Initialize an instance of HuggingFaceEmbeddings with the specified parameters
-    embeddings = HuggingFaceEmbeddings(
-        model_name=modelPath,     # Provide the pre-trained model's path
-        model_kwargs=model_kwargs, # Pass the model configuration options
-        encode_kwargs=encode_kwargs # Pass the encoding options
-    )
-
-    return embeddings
-
-def main():
-    # # Initialise our vector database 
+def run(model, question):
+     # Initialise our vector database 
     db = lancedb.connect("/tmp/lancedb")
 
     docs =   file_preprocessing('')
     embeddings = get_embeddings()
-    question = "Explain Bayesian regret"
+    # question = "Explain Bayesian regret"
 
-    table = db.create_table("my_table", data=[{
+    db.create_table("my_table", data=[{
         "vector": embeddings.embed_query("".join(text.page_content for text in docs)),
         "text": "".join(doc.page_content for doc in docs),
         "id": "1", }],
@@ -90,16 +34,50 @@ def main():
     retriever = db.as_retriever(search_kwargs={"k": 5})
     docs = retriever.get_relevant_documents(question)
     
-    llm = transformer()
-
-    # Create a question-answering instance (qa) using the RetrievalQA class.
-    # It's configured with a language model (llm), a chain type "refine," the retriever we created, and an option to not return source documents.
+    llm = transformer(model)
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="refine", retriever=retriever, return_source_documents=False)
 
     result = qa.invoke({"query": question})
     print(result["result"])
-    # return result["result"]
+    return result["result"]
 
+
+def output(uploaded_file, option, input_text):
+    col1,col2 = st.columns(2)
+
+    filepath = f"data/{uploaded_file.name}"
+    with open(filepath, 'wb') as temp_file:
+        temp_file.write(uploaded_file.read())
+
+    with col1:
+        
+        st.info('Uploaded PDF file')
+        displayPDF(filepath)
+    with col2:   
+        output = run(option,input_text )
+        st.success(output)
+
+# Streamlit 
+st.set_page_config(layout='wide', page_title="Lamini Test")
+
+def main():
+    st.title('Lamini Test')
+
+    uploaded_file = st.file_uploader("Upload your PDF file", type= ['pdf']) 
+
+    with st.sidebar:
+        option = st.selectbox(
+            'Pick a model from the options',
+            ('google/flan-t5-base'))
+        
+    if uploaded_file is not None:
+        btn_col1,  btn_col3 = st.columns([8,2])
+
+        with btn_col1:
+            input_text = st.text_input('Make request', '')
+
+            if(input_text):
+                output(uploaded_file, option, input_text)
 
 if __name__ == '__main__':
     main()
