@@ -2,7 +2,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import AutoTokenizer, T5Tokenizer, T5ForConditionalGeneration
+# from transformers import AutoTokenizer, T5Tokenizer, T5ForConditionalGeneration
 
 
 from transformers import pipeline
@@ -18,14 +18,11 @@ def get_embeddings():
     # Create a dictionary with encoding options, specifically setting 'normalize_embeddings' to False
     encode_kwargs = {'normalize_embeddings': False}
 
-    # Initialize an instance of HuggingFaceEmbeddings with the specified parameters
-    embeddings = HuggingFaceEmbeddings(
-        model_name=modelPath,     # Provide the pre-trained model's path
-        model_kwargs=model_kwargs, # Pass the model configuration options
-        encode_kwargs=encode_kwargs # Pass the encoding options
+    return HuggingFaceEmbeddings(
+        model_name=modelPath,  # Provide the pre-trained model's path
+        model_kwargs=model_kwargs,  # Pass the model configuration options
+        encode_kwargs=encode_kwargs,  # Pass the encoding options
     )
-
-    return embeddings
 
 
 def transformer(checkpoint, config):
@@ -38,25 +35,22 @@ def transformer(checkpoint, config):
 
     # Define a question-answering pipeline using the model and tokenizer
     chain = pipeline(
-        'summarization',
+        'text2text-generation',
         model = checkpoint, 
         min_length = config['min_length'], 
         # max_length = config['max_length'],
         max_new_tokens=config['max_new_tokens']
     )
 
-    # Create an instance of the HuggingFacePipeline, which wraps the question-answering pipeline
-    # with additional model-specific arguments (temperature and max_length)
-    llm = HuggingFacePipeline(
-    pipeline=chain,
-    model_kwargs={"temperature": config['temperature'], "max_length": 512},)
-    return llm
+    return HuggingFacePipeline(
+        pipeline=chain,
+        model_kwargs={"temperature": config['temperature'], "max_length": 512},
+    )
 
 # Load and preprocess file
 def file_preprocessing(filepath):
+    print('###  Extracting words from pdf file')
     loader = PyPDFLoader(filepath)
     pages = loader.load_and_split()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    texts = text_splitter.split_documents(pages)
-    # return "".join(text.page_content for text in texts)
-    return texts
+    return text_splitter.split_documents(pages)

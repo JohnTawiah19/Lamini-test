@@ -1,9 +1,7 @@
-from langchain_community.document_loaders import HuggingFaceDatasetLoader
 from langchain_community.vectorstores import LanceDB
 from langchain.chains import RetrievalQA
 import lancedb
 import streamlit as st
-import base64
 
 from helpers import get_embeddings, transformer, file_preprocessing
 from ui import displayPDF
@@ -17,22 +15,27 @@ config={
 }
 
 def run(model, question, filepath):
-     # Initialise our vector database 
+    # Initialise our vector database 
     db = lancedb.connect("/tmp/lancedb")
 
     docs =   file_preprocessing(filepath)
     embeddings = get_embeddings()
     # question = "Explain Bayesian regret"
 
+    print('### Creating vector store ###')
     db.create_table("my_table", data=[{
         "vector": embeddings.embed_query("".join(text.page_content for text in docs)),
         "text": "".join(doc.page_content for doc in docs),
         "id": "1", }],
         mode="overwrite", )
 
+    print('### Creating vector embedding in vector store ###')
     db = LanceDB.from_documents(docs, embeddings)
     retriever = db.as_retriever(search_kwargs={"k": 5})
+    
+    print('### Performing a similarity search on query ###')
     docs = retriever.get_relevant_documents(question)
+    
     
     llm = transformer(model, config)
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="refine", retriever=retriever, return_source_documents=False)
@@ -75,14 +78,12 @@ def main():
         config['min_length']= st.number_input('Select min token length',value=config['min_length'], placeholder="Type a number...")
         # config['max_length']= st.number_input('Select max token length',value=config['max_length'], placeholder="Type a number...")
         config['max_new_tokens']= st.number_input('Select max new token length',value= config['max_new_tokens'], placeholder="Type a number...")
-        
+
     if uploaded_file is not None:
         btn_col1,  btn_col3 = st.columns([8,2])
 
         with btn_col1:
-            input_text = st.text_input('Make request', '')
-
-            if(input_text):
+            if input_text := st.text_input('Make request', ''):
                 output(uploaded_file, option, input_text)
 
 if __name__ == '__main__':

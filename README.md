@@ -4,7 +4,7 @@
 
 ## Install requirements
 
-## To run app, run 'streamlit run app.py'
+## To run app, run 'streamlit run index.py'
 
 The app;lication takes a PDF file and allows the user to prompt for information on the file
 or to summarise the information in the file.
