@@ -72,7 +72,7 @@ def main():
     with st.sidebar:
         option = st.selectbox(
             'Pick a model from the options',
-            ('google/flan-t5-base', ''))
+            ('google/flan-t5-base', 'meta-llama/Meta-Llama-3-8B'))
 
         config['temperature'] = st.slider('Select Temperature', 0.0, 1.0, (config['temperature']))
         config['min_length']= st.number_input('Select min token length',value=config['min_length'], placeholder="Type a number...")
