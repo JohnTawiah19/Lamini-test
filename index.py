@@ -46,26 +46,24 @@ def run(model, question, filepath):
 
 
 def output(uploaded_file, option, input_text):
-    col1,col2 = st.columns(2)
+    # col1,col2 = st.columns(2)
 
     filepath = f"data/{uploaded_file.name}"
     with open(filepath, 'wb') as temp_file:
         temp_file.write(uploaded_file.read())
-
-    with col1:
-        
-        st.info('Uploaded PDF file')
-        displayPDF(filepath)
-    with col2: 
-        st.info("Response")  
-        output = run(option,input_text, filepath )
-        st.success(output)
+  
+    # st.info('Uploaded PDF file')
+    # displayPDF(filepath)
+    # with col2: 
+    st.info("Response")  
+    output = run(option,input_text, filepath )
+    st.success(output)
 
 # Streamlit 
 st.set_page_config(layout='wide', page_title="Lamini Test")
 
 def main():
-    st.title('Lamini Test')
+    st.title('Custom Transformer For Textbook Extraction')
 
     uploaded_file = st.file_uploader("Upload your PDF file", type= ['pdf']) 
 
@@ -80,11 +78,8 @@ def main():
         config['max_new_tokens']= st.number_input('Select max new token length',value= config['max_new_tokens'], placeholder="Type a number...")
 
     if uploaded_file is not None:
-        btn_col1,  btn_col3 = st.columns([8,2])
-
-        with btn_col1:
-            if input_text := st.text_input('Make request', ''):
-                output(uploaded_file, option, input_text)
+        if input_text := st.text_input('Make request', ''):
+            output(uploaded_file, option, input_text)
 
 if __name__ == '__main__':
     main()

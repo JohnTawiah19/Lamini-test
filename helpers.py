@@ -35,7 +35,7 @@ def transformer(checkpoint, config):
 
     # Define a question-answering pipeline using the model and tokenizer
     chain = pipeline(
-        'text-generation',
+        'text2text-generation',
         model = checkpoint, 
         min_length = config['min_length'], 
         # max_length = config['max_length'],
