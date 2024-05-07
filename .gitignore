@@ -1,5 +1,5 @@
 .venv
-
+__pycache__
 ./data
 /LaMini-Flan-T5-248M
 /LaMini-T5-738M
