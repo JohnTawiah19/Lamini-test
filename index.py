@@ -34,12 +34,11 @@ def run(model, question, filepath):
     retriever = db.as_retriever(search_kwargs={"k": 5})
     
     print('### Performing a similarity search on query ###')
-    docs = retriever.get_relevant_documents(question)
-    
+    docs = retriever.get_relevant_documents(question)    
     
     llm = transformer(model, config)
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="refine", retriever=retriever, return_source_documents=False)
-
+    print('### Retrieve output from LLM ###')
     result = qa.invoke({"query": question})
     # print(result["result"])
     return result["result"]
@@ -51,7 +50,6 @@ def output(uploaded_file, option, input_text):
     filepath = f"data/{uploaded_file.name}"
     with open(filepath, 'wb') as temp_file:
         temp_file.write(uploaded_file.read())
-  
     # st.info('Uploaded PDF file')
     # displayPDF(filepath)
     # with col2: 
@@ -70,7 +68,7 @@ def main():
     with st.sidebar:
         option = st.selectbox(
             'Pick a model from the options',
-            ('google/flan-t5-base', 'meta-llama/Meta-Llama-3-8B'))
+            ('google/flan-t5-base', 'MBZUAI/LaMini-Flan-T5-248M  ' ))
 
         config['temperature'] = st.slider('Select Temperature', 0.0, 1.0, (config['temperature']))
         config['min_length']= st.number_input('Select min token length',value=config['min_length'], placeholder="Type a number...")
